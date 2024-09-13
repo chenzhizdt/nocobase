@@ -92,8 +92,21 @@ export class UserDataSyncService {
         source: source.instance.name,
         sourceType: source.instance.sourceType,
       });
+      let success = false;
       for (const item of data) {
-        await this.resourceManager.updateOrCreate(item);
+        try {
+          await this.resourceManager.updateOrCreate(item);
+          success = true;
+        } catch (err) {
+          ctx.log.error(`update or create data error: ${err.message}`, {
+            method: 'runSync',
+            err: err.stack,
+            cause: err.cause,
+          });
+        }
+      }
+      if (!success) {
+        throw new Error('Data synchronization failed. Please check the logs to troubleshoot the issue.');
       }
       ctx.log.info('end update data of source', {
         source: source.instance.name,
