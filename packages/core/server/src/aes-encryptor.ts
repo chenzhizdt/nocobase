@@ -88,11 +88,23 @@ export class AesEncryptor {
   }
 
   static async create(app: Application) {
-    let key: any = process.env.APP_AES_SECRET_KEY;
-    if (!key) {
+    let key: Buffer;
+    const envKey = process.env.APP_AES_SECRET_KEY;
+    
+    if (envKey) {
+      // Security: Validate environment variable key and derive proper key
+      if (envKey.length < 16) {
+        throw new Error('APP_AES_SECRET_KEY must be at least 16 characters long');
+      }
+      
+      // Use proper key derivation from environment variable
+      const crypto = require('crypto');
+      key = crypto.scryptSync(envKey, app.name || 'nocobase', 32);
+    } else {
       const keyPath = await this.getKeyPath(app.name);
       key = await AesEncryptor.getOrGenerateKey(keyPath);
     }
+    
     return new AesEncryptor(key);
   }
 }

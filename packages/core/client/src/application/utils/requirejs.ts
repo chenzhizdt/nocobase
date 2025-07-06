@@ -2152,7 +2152,40 @@ export function getRequireJs(): RequireJS {
    */
   req.exec = function (text) {
     /*jslint evil: true */
-    return eval(text);
+    // Security: Validate input to prevent code injection
+    if (typeof text !== 'string' || text.length === 0) {
+      throw new Error('Invalid text input for execution');
+    }
+    
+    // Check for dangerous patterns that could indicate code injection
+    const dangerousPatterns = [
+      /eval\s*\(/,
+      /Function\s*\(/,
+      /setTimeout\s*\(/,
+      /setInterval\s*\(/,
+      /document\.createElement/,
+      /document\.write/,
+      /window\./,
+      /global\./,
+      /process\./,
+      /require\s*\(/,
+      /import\s*\(/,
+      /<script/i,
+      /javascript:/i
+    ];
+    
+    for (const pattern of dangerousPatterns) {
+      if (pattern.test(text)) {
+        throw new Error('Potentially dangerous code detected in text execution');
+      }
+    }
+    
+    try {
+      // Use Function constructor instead of eval for better security
+      return new Function('return ' + text)();
+    } catch (error) {
+      throw new Error('Failed to execute text: ' + error.message);
+    }
   };
 
   //Set up with config info.

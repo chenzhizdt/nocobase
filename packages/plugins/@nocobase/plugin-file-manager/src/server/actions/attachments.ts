@@ -16,15 +16,58 @@ import { FILE_FIELD_NAME, FILE_SIZE_LIMIT_DEFAULT, FILE_SIZE_LIMIT_MIN, LIMIT_FI
 import * as Rules from '../rules';
 import { StorageClassType } from '../storages';
 
+// Security: Validate and sanitize filenames to prevent path traversal
+function sanitizeFilename(filename: string): string {
+  if (!filename || typeof filename !== 'string') {
+    throw new Error('Invalid filename');
+  }
+  
+  // Remove path traversal patterns
+  const cleaned = filename
+    .replace(/\.\./g, '') // Remove .. sequences
+    .replace(/[\/\\]/g, '') // Remove path separators
+    .replace(/[\x00-\x1f\x80-\x9f]/g, '') // Remove control characters
+    .replace(/^\.+/, '') // Remove leading dots
+    .trim();
+  
+  if (cleaned.length === 0) {
+    throw new Error('Invalid filename after sanitization');
+  }
+  
+  if (cleaned.length > 255) {
+    throw new Error('Filename too long');
+  }
+  
+  // Check for dangerous file extensions
+  const dangerousExtensions = [
+    '.exe', '.bat', '.cmd', '.com', '.pif', '.scr', '.vbs', '.js', '.jar',
+    '.php', '.asp', '.aspx', '.jsp', '.sh', '.ps1', '.py', '.rb', '.pl'
+  ];
+  
+  const ext = Path.extname(cleaned).toLowerCase();
+  if (dangerousExtensions.includes(ext)) {
+    throw new Error('Dangerous file extension not allowed');
+  }
+  
+  return cleaned;
+}
+
 // TODO(optimize): 需要优化错误处理，计算失败后需要抛出对应错误，以便程序处理
 function getFileFilter(storage) {
   return (req, file, cb) => {
-    // size 交给 limits 处理
-    const { size, ...rules } = storage.rules;
-    const ruleKeys = Object.keys(rules);
-    const result =
-      !ruleKeys.length || !ruleKeys.some((key) => typeof Rules[key] !== 'function' || !Rules[key](file, rules[key]));
-    cb(null, result);
+    try {
+      // Security: Validate and sanitize filename
+      file.originalname = sanitizeFilename(file.originalname);
+      
+      // size 交给 limits 处理
+      const { size, ...rules } = storage.rules;
+      const ruleKeys = Object.keys(rules);
+      const result =
+        !ruleKeys.length || !ruleKeys.some((key) => typeof Rules[key] !== 'function' || !Rules[key](file, rules[key]));
+      cb(null, result);
+    } catch (error) {
+      cb(error, false);
+    }
   };
 }
 
