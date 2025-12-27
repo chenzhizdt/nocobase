@@ -83,7 +83,7 @@ const useTableSelectorProps = () => {
 };
 
 function FileSelector(props) {
-  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile, ...other } = props;
+  const { disabled, multiple, value, onChange, action, onSelect, quickUpload, selectFile, fileRules, ...other } = props;
   const { wrapSSR, hashId, componentCls: prefixCls } = useStyles();
   const { useFileCollectionStorageRules, useAttachmentFieldProps } = useExpressionScope();
   const { t } = useTranslation();
@@ -124,6 +124,7 @@ function FileSelector(props) {
             onChange={onChange}
             action={action}
             rules={rules}
+            fileRules={fileRules}
             disabled={disabled}
             {...other}
           />
@@ -168,6 +169,7 @@ const InternalFileManager = (props) => {
   const labelUiSchema = useLabelUiSchema(collectionField?.target, fieldNames?.label || 'label');
   const compile = useCompile();
   const { modalProps } = useActionContext();
+  const fileRules = fieldSchema['x-component-props']?.fileRules;
   const handleSelect = (ev) => {
     ev.stopPropagation();
     ev.preventDefault();
@@ -237,6 +239,7 @@ const InternalFileManager = (props) => {
         multiple={multiple}
         quickUpload={fieldSchema['x-component-props']?.quickUpload !== false}
         selectFile={fieldSchema['x-component-props']?.selectFile !== false}
+        fileRules={fileRules}
         action={`${collectionField?.target}:create`}
         onSelect={handleSelect}
         onChange={onChange}

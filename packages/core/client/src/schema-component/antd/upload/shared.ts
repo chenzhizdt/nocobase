@@ -225,6 +225,45 @@ export const toFileList = (fileList: any) => {
   return toArr(fileList).filter(Boolean).map(toItem);
 };
 
+type RuleFunction = (file: UploadFile, options: any) => string | null | Promise<string | null>;
+
+export interface ImageSizeRule {
+  mode: 'none' | 'exact' | 'max' | 'min';
+  width?: number;
+  height?: number;
+}
+
+export interface FileRules {
+  maxSize?: number;
+  imageSize?: ImageSizeRule;
+}
+
+export interface ValidationError {
+  message: string;
+  params?: Record<string, any>;
+}
+
+function getImageDimensions(file: UploadFile): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      resolve({ width: img.width, height: img.height });
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error('Failed to load image'));
+    };
+    if (file.originFileObj) {
+      img.src = URL.createObjectURL(file.originFileObj);
+    } else if ((file as any) instanceof File) {
+      img.src = URL.createObjectURL(file as any);
+    } else {
+      reject(new Error('No file object available'));
+    }
+  });
+}
+
 const Rules: Record<string, RuleFunction> = {
   size(file, options: number): null | string {
     const size = options ?? FILE_SIZE_LIMIT_DEFAULT;
@@ -240,11 +279,60 @@ const Rules: Record<string, RuleFunction> = {
     }
     return pattern.split(',').filter(Boolean).some(match(file.type)) ? null : 'File type is not allowed';
   },
+  maxSize(file, options: number): null | string {
+    if (!options || options <= 0) {
+      return null;
+    }
+    return file.size <= options ? null : 'File size exceeds the limit';
+  },
+  async imageSize(file, options: ImageSizeRule): Promise<null | string> {
+    if (!options || options.mode === 'none' || !options.width || !options.height) {
+      return null;
+    }
+    // Only check image files
+    const fileType = (file as any).type || file.originFileObj?.type;
+    if (!fileType?.startsWith('image/')) {
+      return null;
+    }
+    try {
+      const { width, height } = await getImageDimensions(file);
+      const { mode, width: targetWidth, height: targetHeight } = options;
+
+      switch (mode) {
+        case 'exact':
+          if (width !== targetWidth || height !== targetHeight) {
+            return JSON.stringify({
+              key: 'Image must be exactly {{target}}px (current: {{current}}px)',
+              params: { target: `${targetWidth}×${targetHeight}`, current: `${width}×${height}` },
+            });
+          }
+          break;
+        case 'max':
+          if (width > targetWidth || height > targetHeight) {
+            return JSON.stringify({
+              key: 'Image must not exceed {{target}}px (current: {{current}}px)',
+              params: { target: `${targetWidth}×${targetHeight}`, current: `${width}×${height}` },
+            });
+          }
+          break;
+        case 'min':
+          if (width < targetWidth || height < targetHeight) {
+            return JSON.stringify({
+              key: 'Image must be at least {{target}}px (current: {{current}}px)',
+              params: { target: `${targetWidth}×${targetHeight}`, current: `${width}×${height}` },
+            });
+          }
+          break;
+      }
+      return null;
+    } catch {
+      // If we can't read the image, skip the check
+      return null;
+    }
+  },
 };
 
-type RuleFunction = (file: UploadFile, options: any) => string | null;
-
-export function validate(file, rules: Record<string, any>) {
+export async function validate(file, rules: Record<string, any>): Promise<string | null> {
   if (!rules) {
     return null;
   }
@@ -253,7 +341,11 @@ export function validate(file, rules: Record<string, any>) {
     return null;
   }
   for (const key of ruleKeys) {
-    const error = Rules[key](file, rules[key]);
+    const ruleFn = Rules[key];
+    if (!ruleFn) {
+      continue;
+    }
+    const error = await ruleFn(file, rules[key]);
     if (error) {
       return error;
     }
@@ -265,7 +357,7 @@ export function useBeforeUpload(rules) {
   const { t } = useTranslation();
 
   return useCallback(
-    (file, fileList) => {
+    async (file, fileList) => {
       let proxiedFile = file;
       if (!file.type) {
         const extname = file.name?.match(/\.[^.]+$/)?.[0];
@@ -276,19 +368,30 @@ export function useBeforeUpload(rules) {
           });
         }
       }
-      const error = validate(proxiedFile, rules);
+      const error = await validate(proxiedFile, rules);
 
       if (error) {
         file.status = 'error';
-        file.response = t(error);
+        // Handle parameterized error messages (JSON format)
+        try {
+          const parsed = JSON.parse(error);
+          if (parsed.key && parsed.params) {
+            file.response = t(parsed.key, parsed.params);
+          } else {
+            file.response = t(error);
+          }
+        } catch {
+          file.response = t(error);
+        }
+        return false;
       } else {
         if (file.status === 'error') {
           delete proxiedFile.status;
           delete proxiedFile.response;
         }
       }
-      return error ? false : Promise.resolve(proxiedFile);
+      return Promise.resolve(proxiedFile);
     },
-    [rules],
+    [rules, t],
   );
 }

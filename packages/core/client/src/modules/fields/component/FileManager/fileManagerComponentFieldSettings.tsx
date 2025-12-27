@@ -31,6 +31,18 @@ export const fileSizeOptions = [
   { label: 300, value: 300 },
 ];
 
+const imageSizeModeOptions = [
+  { label: "{{t('No limit')}}", value: 'none' },
+  { label: "{{t('Exact size')}}", value: 'exact' },
+  { label: "{{t('Maximum size')}}", value: 'max' },
+  { label: "{{t('Minimum size')}}", value: 'min' },
+];
+
+const fileSizeUnitOptions = [
+  { label: 'KB', value: 1024 },
+  { label: 'MB', value: 1024 * 1024 },
+];
+
 const fieldComponent: any = {
   name: 'fieldComponent',
   type: 'select',
@@ -225,6 +237,216 @@ export const fileManagerComponentFieldSettings = new SchemaSettings({
         const isAssociationField = useIsAssociationField();
         const IsShowMultipleSwitch = useIsShowMultipleSwitch();
         return isAssociationField && IsShowMultipleSwitch();
+      },
+    },
+    {
+      name: 'divider1',
+      type: 'divider',
+      useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const field = useField();
+        const form = useForm();
+        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+        return !isReadPretty;
+      },
+    },
+    {
+      name: 'maxFileSize',
+      type: 'modal',
+      useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const field = useField();
+        const form = useForm();
+        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+        return !isReadPretty;
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const { dn } = useDesignable();
+
+        const currentMaxSize = fieldSchema['x-component-props']?.fileRules?.maxSize;
+        const currentUnit = currentMaxSize >= 1024 * 1024 ? 1024 * 1024 : 1024;
+        const currentValue = currentMaxSize ? currentMaxSize / currentUnit : undefined;
+        const unitLabel = currentUnit === 1024 * 1024 ? 'MB' : 'KB';
+
+        // 生成显示文本
+        const displayValue = currentMaxSize ? `${currentValue} ${unitLabel}` : t('Not set');
+
+        return {
+          title: t('File size limit'),
+          children: displayValue,
+          schema: {
+            type: 'object',
+            properties: {
+              maxFileSize: {
+                type: 'number',
+                title: t('Maximum file size'),
+                'x-decorator': 'FormItem',
+                'x-component': 'InputNumber',
+                'x-component-props': {
+                  min: 0,
+                },
+                default: currentValue,
+                description: t('Leave empty to use storage default limit'),
+              },
+              unit: {
+                type: 'number',
+                title: t('Unit'),
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  options: fileSizeUnitOptions,
+                },
+                default: currentUnit,
+              },
+            },
+          },
+          onSubmit: ({ maxFileSize, unit }) => {
+            const maxSize = maxFileSize && unit ? maxFileSize * unit : undefined;
+            const componentProps = fieldSchema['x-component-props'] || {};
+            const fileRules = componentProps.fileRules || {};
+
+            if (maxSize) {
+              fileRules.maxSize = maxSize;
+            } else {
+              delete fileRules.maxSize;
+            }
+
+            fieldSchema['x-component-props'] = {
+              ...componentProps,
+              fileRules: Object.keys(fileRules).length > 0 ? fileRules : undefined,
+            };
+
+            field.componentProps = fieldSchema['x-component-props'];
+
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': fieldSchema['x-component-props'],
+              },
+            });
+            dn.refresh();
+          },
+        };
+      },
+    },
+    {
+      name: 'imageSizeLimit',
+      type: 'modal',
+      useVisible() {
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const field = useField();
+        const form = useForm();
+        const isReadPretty = tableColumnSchema?.['x-read-pretty'] || field.readPretty || form.readPretty;
+        return !isReadPretty;
+      },
+      useComponentProps() {
+        const { t } = useTranslation();
+        const field = useField<Field>();
+        const { fieldSchema: tableColumnSchema } = useColumnSchema();
+        const schema = useFieldSchema();
+        const fieldSchema = tableColumnSchema || schema;
+        const { dn } = useDesignable();
+
+        const currentImageSize = fieldSchema['x-component-props']?.fileRules?.imageSize;
+
+        // 生成显示文本
+        let displayValue = t('Not set');
+        if (currentImageSize && currentImageSize.mode !== 'none' && currentImageSize.width && currentImageSize.height) {
+          const modeLabels: Record<string, string> = {
+            exact: t('Exact size'),
+            max: t('Maximum size'),
+            min: t('Minimum size'),
+          };
+          displayValue = `${modeLabels[currentImageSize.mode] || currentImageSize.mode}: ${currentImageSize.width}×${
+            currentImageSize.height
+          }`;
+        }
+
+        return {
+          title: t('Image size limit'),
+          children: displayValue,
+          schema: {
+            type: 'object',
+            properties: {
+              mode: {
+                type: 'string',
+                title: t('Limit type'),
+                'x-decorator': 'FormItem',
+                'x-component': 'Select',
+                'x-component-props': {
+                  options: imageSizeModeOptions,
+                },
+                default: currentImageSize?.mode || 'none',
+              },
+              width: {
+                type: 'number',
+                title: t('Width (px)'),
+                'x-decorator': 'FormItem',
+                'x-component': 'InputNumber',
+                'x-component-props': {
+                  min: 1,
+                },
+                'x-reactions': {
+                  dependencies: ['mode'],
+                  fulfill: {
+                    state: {
+                      visible: '{{$deps[0] !== "none"}}',
+                    },
+                  },
+                },
+                default: currentImageSize?.width,
+              },
+              height: {
+                type: 'number',
+                title: t('Height (px)'),
+                'x-decorator': 'FormItem',
+                'x-component': 'InputNumber',
+                'x-component-props': {
+                  min: 1,
+                },
+                'x-reactions': {
+                  dependencies: ['mode'],
+                  fulfill: {
+                    state: {
+                      visible: '{{$deps[0] !== "none"}}',
+                    },
+                  },
+                },
+                default: currentImageSize?.height,
+              },
+            },
+          },
+          onSubmit: ({ mode, width, height }) => {
+            const componentProps = fieldSchema['x-component-props'] || {};
+            const fileRules = componentProps.fileRules || {};
+
+            if (mode && mode !== 'none' && width && height) {
+              fileRules.imageSize = { mode, width, height };
+            } else {
+              delete fileRules.imageSize;
+            }
+
+            fieldSchema['x-component-props'] = {
+              ...componentProps,
+              fileRules: Object.keys(fileRules).length > 0 ? fileRules : undefined,
+            };
+
+            field.componentProps = fieldSchema['x-component-props'];
+
+            dn.emit('patch', {
+              schema: {
+                ['x-uid']: fieldSchema['x-uid'],
+                'x-component-props': fieldSchema['x-component-props'],
+              },
+            });
+            dn.refresh();
+          },
+        };
       },
     },
   ],

@@ -476,7 +476,11 @@ export function AttachmentList(props) {
   );
 }
 
-export function Uploader({ rules, ...props }: UploadProps) {
+export function Uploader({
+  rules,
+  fileRules,
+  ...props
+}: UploadProps & { fileRules?: { maxSize?: number; imageSize?: { mode: string; width?: number; height?: number } } }) {
   const { disabled, multiple, value, onChange, toValueItem = toValueItemDefault } = props;
   const [uploadedList, setUploadedList] = useState<any[]>([]);
   const [pendingList, setPendingList] = useState<any[]>([]);
@@ -484,9 +488,22 @@ export function Uploader({ rules, ...props }: UploadProps) {
   const { componentCls: prefixCls } = useStyles();
   const field = useField<Field>();
 
+  // Merge storage rules with field-level rules
+  const mergedRules = useMemo(() => {
+    const merged = { ...rules };
+    if (fileRules?.maxSize) {
+      // Field-level maxSize takes priority over storage size
+      merged.maxSize = fileRules.maxSize;
+    }
+    if (fileRules?.imageSize && fileRules.imageSize.mode !== 'none') {
+      merged.imageSize = fileRules.imageSize;
+    }
+    return merged;
+  }, [rules, fileRules]);
+
   const uploadProps = useUploadProps(props);
 
-  const beforeUpload = useBeforeUpload(rules);
+  const beforeUpload = useBeforeUpload(mergedRules);
 
   useEffect(() => {
     if (pendingList.length) {
@@ -546,8 +563,9 @@ export function Uploader({ rules, ...props }: UploadProps) {
 
   const QRCodeUploader = useComponent('QRCodeUploader');
 
-  const { mimetype: accept, size } = rules ?? {};
-  const sizeHint = useSizeHint(size);
+  const { mimetype: accept, size } = mergedRules ?? {};
+  const effectiveSize = fileRules?.maxSize || size;
+  const sizeHint = useSizeHint(effectiveSize);
   const selectable =
     !disabled && (multiple || ((!value || (Array.isArray(value) && !value.length)) && !pendingList.length));
   return (
