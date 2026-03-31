@@ -2,7 +2,7 @@
 displayName: "数据表字段：手写签名"
 packageName: '@nocobase/plugin-field-handwritten-signature'
 title: "数据表字段：手写签名"
-keywords: "手写签名,签名字段"
+keywords: "数据表字段：手写签名,插件,NocoBase"
 supportedVersions:
   - 2.x
 description: |

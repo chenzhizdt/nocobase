@@ -1,7 +1,6 @@
 ---
 displayName: "Collection field: Handwritten Signature"
 packageName: '@nocobase/plugin-field-handwritten-signature'
-keywords: "handwritten signature,signature field"
 supportedVersions:
   - 2.x
 description: |

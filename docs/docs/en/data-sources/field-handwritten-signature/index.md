@@ -8,10 +8,6 @@ pkg: "@nocobase/plugin-field-handwritten-signature"
 
 The handwritten signature field lets users draw a signature on the canvas (mouse or touch). After saving, the signature image is stored in the selected **file collection** and uses the file upload and storage pipeline provided by **File manager**.
 
-:::info
-This plugin requires a **NocoBase Professional** license or higher. It is not included in the Community edition.
-:::
-
 ## Installation
 
 1. Confirm your deployment is on **Professional edition or above** and the license is valid.
