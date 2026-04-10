@@ -30,4 +30,4 @@ Create a channel in Notification manager, type **DingTalk**, and select the auth
 ## Related
 
 - [Authentication: DingTalk](/auth-verification/auth-dingtalk)
-- [Sync users from DingTalk](/users-permissions/sync/sources/dingtalk) (Chinese doc; English page can be added similarly).
+- [Sync users from DingTalk](/users-permissions/sync/sources/dingtalk)
