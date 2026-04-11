@@ -1,13 +1,8 @@
 ---
-pkg: '@nocobase/plugin-user-data-sync'
-title: 'Sync user data from DingTalk'
-description: 'Sync users and departments from DingTalk: self-built app Client ID/Secret, directory APIs, event subscription HTTP callback, and incremental updates.'
-keywords: 'DingTalk,user sync,address book,event callback,user data sync,NocoBase'
+pkg: "@nocobase/plugin-auth-dingtalk"
 ---
 
-# Sync user data from DingTalk
-
-<PluginInfo commercial="true" name="dingtalk"></PluginInfo>
+# Synchronize User Data from DingTalk
 
 ## Introduction
 
@@ -45,8 +40,3 @@ With event subscription enabled and **Token** / **EncodingAESKey** configured co
 ## Relationship to the authenticator
 
 The Client ID / Secret on the sync source can be the **same** as the DingTalk **authenticator** (one app), or you can use a **separate** app that has directory permissions—follow least privilege for your environment.
-
-## Related
-
-- [Authentication: DingTalk](/auth-verification/auth-dingtalk)
-- [DingTalk notifications](/notification-manager/dingtalk)

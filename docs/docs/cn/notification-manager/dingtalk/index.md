@@ -1,8 +1,5 @@
 ---
 pkg: '@nocobase/plugin-auth-dingtalk'
-title: "钉钉通知"
-description: "钉钉通知渠道：工作通知支持 Markdown、ActionCard、OA（Form）模板，需配置钉钉认证器与 AgentId。"
-keywords: "钉钉通知,工作通知,ActionCard,OA,Markdown,通知管理,NocoBase"
 ---
 
 # 通知：钉钉
@@ -36,9 +33,3 @@ keywords: "钉钉通知,工作通知,ActionCard,OA,Markdown,通知管理,NocoBas
 ## 工作流与自动化
 
 在通知节点中选择已配置的钉钉渠道，按表单填写收件人与消息内容即可。
-
-## 相关文档
-
-- [认证：钉钉](/auth-verification/auth-dingtalk)
-- [从钉钉同步用户数据](/users-permissions/sync/sources/dingtalk)
-- 钉钉开放平台：工作通知、事件订阅与权限以官方文档为准。

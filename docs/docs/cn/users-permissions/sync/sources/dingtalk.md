@@ -1,13 +1,11 @@
 ---
-pkg: '@nocobase/plugin-user-data-sync'
+pkg: '@nocobase/plugin-auth-dingtalk'
 title: "从钉钉同步用户数据"
 description: "NocoBase 从钉钉同步用户与部门：自建应用 Client ID/Secret、通讯录 API、事件订阅回调与增量同步。"
 keywords: "钉钉,用户同步,通讯录,事件回调,用户数据同步,NocoBase"
 ---
 
 # 从钉钉同步用户数据
-
-<PluginInfo commercial="true" name="dingtalk"></PluginInfo>
 
 ## 介绍
 
@@ -45,7 +43,3 @@ keywords: "钉钉,用户同步,通讯录,事件回调,用户数据同步,NocoBas
 ## 与认证器的关系
 
 同步来源使用的 Client ID/Secret 可与钉钉**认证器**相同（同一应用），也可单独使用具备通讯录权限的应用；按安全与权限最小化原则配置即可。
-
-## 相关文档
-
-- [钉钉通知](/notification-manager/dingtalk)

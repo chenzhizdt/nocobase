@@ -1,11 +1,8 @@
 ---
 pkg: '@nocobase/plugin-auth-dingtalk'
-title: "DingTalk notifications"
-description: "DingTalk notification channel: work notifications with Markdown and action cards; requires DingTalk authenticator and Agent ID."
-keywords: "DingTalk,work notification,action card,notification manager,NocoBase"
 ---
 
-# Notifications: DingTalk
+# Notification: DingTalk
 
 ## Overview
 
@@ -26,8 +23,3 @@ Create a channel in Notification manager, type **DingTalk**, and select the auth
 - **Markdown template** — `markdown` work notification (text / images / links per DingTalk client).
 - **ActionCard template** — `action_card` with **whole-card jump** (single URL) or **independent buttons** (`btn_json_list` JSON array).
 - **Form template (OA)** — `oa` for structured summaries (e.g. orders), optional `form` key-value JSON rows, plus `message_url` / `pc_message_url`.
-
-## Related
-
-- [Authentication: DingTalk](/auth-verification/auth-dingtalk)
-- [Sync users from DingTalk](/users-permissions/sync/sources/dingtalk)
